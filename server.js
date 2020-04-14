@@ -48,20 +48,16 @@ const item2 = new Item({
 });
 
 const item3 = new Item({
-  name: "Tick the checkbox top delete <----------------"
+  name: "Tick the checkbox top delete"
 });
 
 const default_items = [item1, item2, item3];
 //======================================================================
 
 
-
 app.get("/", function(req, res) {
 
   const day = date.getDate();
-
-
-
   Item.find({}, function(err, found_items) {
     if (found_items.length === 0) {
       Item.insertMany(default_items, function(err) {
@@ -84,6 +80,7 @@ app.get("/", function(req, res) {
   });
 });
 
+
 app.post("/", function(req, res) {
   const item_name = req.body.newItem;
   const list_name = _.lowerCase(req.body.list);
@@ -95,29 +92,29 @@ app.post("/", function(req, res) {
     name: item_name
   });
 
-  if(list_name === "today"){
+  if (list_name === "today") {
     console.log("inserting Today");
     item.save();
     res.redirect('/');
+  } else {
+    List.findOne({
+      name: list_name
+    }, function(err, found_list) {
+      console.log("List FOUND!: ", found_list);
+      found_list.items.push(item);
+      found_list.save();
+      res.redirect("/" + list_name);
+    });
   }
-  else {
-      List.findOne({name:list_name}, function(err, found_list){
-        console.log("List FOUND!: ",found_list);
-        found_list.items.push(item);
-        found_list.save();
-        res.redirect("/" + list_name);
-      });
-  }
-
-
 });
+
 
 app.post("/delete", function(req, res) {
   const checked_item_id = req.body.checkbox;
   const list_name = _.lowerCase(req.body.list_name);
-  console.log("Deleting:",list_name, checked_item_id);
+  console.log("Deleting:", list_name, checked_item_id);
 
-  if(list_name === "today") {
+  if (list_name === "today") {
 
     const result = Item.deleteOne({
       _id: checked_item_id
@@ -125,25 +122,20 @@ app.post("/delete", function(req, res) {
       if (err) console.log(err);
       console.log(`Successfully deleted ${checked_item_id}!`);
     });
-      res.redirect('/');
+    res.redirect('/');
 
   } else {
-    console.log("deleting from " + list_name + " id:" +checked_item_id);
-    //List.findOneAndUpdate( {name:list_name}, {$pull: {items: {_id: checked_item_id}, function(err, found_list){
-  //       if(err) console.log(err)
-  // }}});
-      List.findOne( {name:list_name}, function(err, found_list){
-          console.log(found_list);
-          found_list.items.pull(checked_item_id);
-          found_list.save();
-          // found_list.deleteOne({_id:checked_item_id}, function(err){
-          //   if(err) console.log(err)
-          //   else console.log(`Successfully deleted ${checked_item_id}!`);
-          // })
-          // found_list.items.pop(checked_item_id);
-          // found_list.save();
-          res.redirect("/" + list_name);
-      });
+    console.log("deleting from " + list_name + " id:" + checked_item_id);
+
+    List.findOne({
+      name: list_name
+    }, function(err, found_list) {
+      console.log(found_list);
+      found_list.items.pull(checked_item_id);
+      found_list.save();
+
+      res.redirect("/" + list_name);
+    });
 
   }
 
@@ -154,18 +146,19 @@ app.get("/:custom_list_names", function(req, res) {
   const custom_list_name = _.kebabCase(req.params.custom_list_names);
   const day = date.getDate();
 
-  List.findOne({ name: custom_list_name}, function(err, found_list) {
+  List.findOne({
+    name: custom_list_name
+  }, function(err, found_list) {
     if (err) console.log(err);
     else {
-        if (!found_list) {
-          const list = new List({
+      if (!found_list) {
+        const list = new List({
           name: custom_list_name,
           items: default_items
         });
         list.save();
         res.redirect("/" + custom_list_name);
-      }
-      else {
+      } else {
         console.log(`${_.capitalize(custom_list_name)}, ${day}`);
         console.log(found_list);
         res.render('list', {
@@ -176,67 +169,7 @@ app.get("/:custom_list_names", function(req, res) {
       }
     }
   });
-
-
-  // if (_.lowerCase(custom_list_name) === 'work') {
-  //   console.log("Work:",custom_list_name);
-  //   Work.find({}, function(err, found_items) {
-  //     if (found_items.length === 0) {
-  //       Work.insertMany([first_work], function(err) {
-  //         if (err) console.log(err);
-  //         else console.log("Successfully inserted default work item!");
-  //       });
-  //     } else {
-  //       res.render('list', {
-  //         listTitle: day,
-  //         newListItems: found_items
-  //       });
-  //     }
-  //   });
-  // } else {
-  //
-  //   Item.find({}, function(err, found_items) {
-  //     if (found_items.length === 0) {
-  //       Item.insertMany([first_item], function(err) {
-  //         if (err) console.log(err);
-  //         else console.log("Successfully inserted default item!");
-  //       });
-  //     } else {
-  //       res.render('list', {
-  //         listTitle: day,
-  //         newListItems: found_items
-  //       });
-  //     }
-  //   });
-  //
-  // }
-
 });
-
-// app.get("/work", function(req, res) {
-//
-//   const day = date.getDate();
-//
-//   Work.find({}, function(err, found_items) {
-//     console.log(day, found_items);
-//
-//     if (found_items.length === 0) {
-//       Work.insertMany([first_work], function(err) {
-//         if (err) {
-//           console.log(err);
-//         } else {
-//           console.log("Successfully inserted first");
-//         }
-//       });
-//     } else {
-//       res.render('list', {
-//         listTitle: day,
-//         newListItems: found_items
-//       });
-//     }
-//   });
-// });
-
 
 
 app.get("/about", function(req, res) {
@@ -244,6 +177,6 @@ app.get("/about", function(req, res) {
 });
 
 const server = app.listen(process.env.PORT || 3100, () => {
-    const port = server.address().port;
-    console.log(`App listening on port ${port}`);
-  });
+  const port = server.address().port;
+  console.log(`Successfully started server @ ${port}`);
+});
